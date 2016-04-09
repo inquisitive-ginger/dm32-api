@@ -4,14 +4,14 @@
 var _ 			= require('underscore');
 var ip 			= require('ip');
 var wifiName	= require('wifi-name');
+var io 			= require('socket.io-client');
 
 // internal dependencies
 var SerialPortController = require('./serial-port.controller');
 var config = require('../common/config');
 var util = require('../../util/util');
 
-var VirtualDm32 = function (sock, em) {
-	!sock && (sock = {});
+var VirtualDm32 = function (em) {
 	!em && (em = {});
 
 	var _this = this;
@@ -29,6 +29,7 @@ var VirtualDm32 = function (sock, em) {
 	_this.dataInterval 		= dataInterval;
 	_this.disconnect 		= disconnect;
 	_this.response 			= response;
+	_this.socket 			= {};
 
 	initialize();
 
@@ -36,7 +37,6 @@ var VirtualDm32 = function (sock, em) {
 		wifiName().then(function(name){
 			wifiSSID 			= name;
 			apiServerAddress 	= config.apiServers[wifiSSID].url;
-
 		});
 
 		em.on('data-available', processData);
@@ -137,6 +137,8 @@ var VirtualDm32 = function (sock, em) {
 		}
 			
 		sensorDataReady() && sendSensorData(); 
+		paramDataReady();
+
 	}
 
 	// check to see if all sensor values are present
@@ -156,7 +158,15 @@ var VirtualDm32 = function (sock, em) {
 			paramSettings['ip']	= ip.address();
 
 			// connect to API Server
-			io.connect(apiServerAddress, {query: util.queryerize(paramSettings)});
+			_this.socket = io.connect(apiServerAddress + '/dm32', {query: { dm32: util.queryerize(paramSettings)} });
+			
+			_this.socket.on('disconnect', function(){
+				console.log('API Server was disconnected!');
+			})
+
+			_this.socket.on('reconnect', function(){
+				console.log('API Server was reconnected!');
+			})
 		}
 
 		return ready;

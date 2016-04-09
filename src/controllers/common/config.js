@@ -1,13 +1,13 @@
 'use strict';
 
 module.exports = {
-	name: 'telsa-001',
+	name: 'tesla-002',
 	apiServers: {
 		"solo-abx": {
-			url: 'http://192.168.1.214:3000/api'
+			url: 'http://192.168.1.214:3000'
 		},
 		"Wi-Fi-Fo-Fum": {
-			url: 'http://10.0.0.203:3000/api'
+			url: 'http://10.0.0.203:3000'
 		}
 	},
 	commands: {

@@ -101,6 +101,7 @@ var AutoTest = function (settings, vdm32, em) {
 	// stop test and clean up
 	function stopTest(mon) {
 		vdm32.disconnect(mon);
+		testData = { points: [], pauseTime: [], resumeTime: [] };
 	}
 
 	// determine pressure step size between levels

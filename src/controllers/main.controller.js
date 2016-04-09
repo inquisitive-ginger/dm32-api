@@ -3,7 +3,6 @@
 // third party dependencies
 var _ 			= require('underscore');
 var events 		= require('events');
-var io 			= require('socket.io-client');
 
 // internal dependencies
 var config			= require('./common/config');
@@ -14,12 +13,11 @@ var util 			= require('../util/util');
 var MainController = function() {
 	var _this = this;
 
-	var socket 				= {};
 	var emitter 			= new events.EventEmitter();
 	var activeTestMonitor	= {};
 
 	// exposed methods and variables
-	_this.dm32 				= {};
+	_this.dm32 				= new Dm32Controller(emitter);
 	_this.abt				= {};	
 	_this.sendCommand 		= sendCommand;
 	_this.startAutoTest		= startAutoTest;
