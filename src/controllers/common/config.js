@@ -1,8 +1,8 @@
 'use strict';
 
 module.exports = {
-	name: 'tesla-002',
-	apiServers: {
+	name: 'tesla-001',
+	registry: {
 		"solo-abx": {
 			url: 'http://192.168.1.214:3000'
 		},

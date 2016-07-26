@@ -13,7 +13,6 @@ var AutoTest = function (settings, vdm32, em) {
 	var holdTime 			= parseFloat(settings['hold_time']);
 	var stepSize 			= calculateStepSize();
 	var testData 			= { points: [], pauseTime: [], resumeTime: [] };
-	var testStatus 			= 'Test not started...';
 	var pressureHitCount	= 0;
 	var targetPressure 		= startPressure;
 	var activeDataInterval 	= {};
@@ -31,57 +30,62 @@ var AutoTest = function (settings, vdm32, em) {
 		addEventListeners();
 
 		!testPaused && (testData.startTime = Date.now());
-		!testPaused && (activeDataInterval = vdm32.dataInterval(500));
+		!testPaused && (activeDataInterval = vdm32.dataInterval(1000));
 		setTargetPressure(targetPressure);
 
 		testPaused = false;
+		vdm32.socket.emit('statusUpdate', {message: 'Starting a new test...you can go grab that beer now', active: true});
 	}
 
 	function addEventListeners() {
 		em.on('sensor-packet-available', checkPressureLevel);
 		em.on('pressure-acquired', processDataPoint);
-		em.on('test-completed', wrapUpTest);
 	}
 
 	function removeEventListeners() {
 		em.removeAllListeners('sensor-packet-available');
 		em.removeAllListeners('pressure-acquired');
-		em.removeAllListeners('test-completed');
 	}
 
 	function setTargetPressure(pressure) {
 		targetPressure = pressure;
 		vdm32.sendCommand('setEnvelopePressure', targetPressure);
+		vdm32.socket.emit('statusUpdate', {message: 'Targeting ' + pressure + ' Pa', active: true});
 	}
 
 	function checkPressureLevel(data) {
 		var pressureDifference = Math.abs(targetPressure - data['envelope_dp']);
 		var percentDifference = 100 * (pressureDifference / targetPressure);
 
-		percentDifference < 1 ? pressureHitCount++ : pressureHitCount = 0;
-
-		if ((pressureHitCount * 500) > (holdTime * 1000)) {
+		percentDifference < 2 ? pressureHitCount++ : pressureHitCount = 0;
+		
+		
+		if ((pressureHitCount * 1000) > (holdTime * 1000)) {
 			em.emit('pressure-acquired', data);
 			pressureHitCount = 0;
+		} else {
+			data['capture'] = false;
+			vdm32.socket.emit('dataPointAvailable', data);
 		}
 	}
 
 	function processDataPoint(data) {
-		data['timestamp'] = Date.now();
+		data['timestamp'] 	= Date.now();
+		data['capture'] 	= true;
+		data['target'] 		= targetPressure;
+		data['name'] 		= vdm32.name;
+
 		testData.points.push(data);
+		vdm32.socket.emit('dataPointAvailable', data);
 
 		numSteps--;
 		if (numSteps > 0) {
 			setTargetPressure(targetPressure + stepSize);
 		} else {
 			testData.stopTime = Date.now();
-			em.emit('test-completed');
+			vdm32.socket.emit('statusUpdate', {message: 'Test completed. That was pretty fun huh?', active: false});
+			stopTest();
 		}
-	}
-
-	function wrapUpTest() {
-		console.log(testData);
-		stopTest(activeDataInterval);
 	}
 
 	// pause active test
@@ -99,9 +103,9 @@ var AutoTest = function (settings, vdm32, em) {
 	}
 
 	// stop test and clean up
-	function stopTest(mon) {
-		vdm32.disconnect(mon);
-		testData = { points: [], pauseTime: [], resumeTime: [] };
+	function stopTest() {
+		vdm32.disconnect(activeDataInterval);
+		removeEventListeners();
 	}
 
 	// determine pressure step size between levels

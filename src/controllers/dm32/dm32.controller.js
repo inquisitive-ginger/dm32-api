@@ -16,13 +16,13 @@ var VirtualDm32 = function (em) {
 
 	var _this = this;
 
-	var dm32SerialPort		= new SerialPortController(em);
-	var paramSettings		= {};
-	var sensorData			= {};
-	var activeMonitor 		= {};
-	var responseStack 		= [];
-	var wifiSSID 			= '';
-	var apiServerAddress 	= '';
+	var dm32SerialPort	= new SerialPortController(em);
+	var paramSettings	= {};
+	var sensorData		= {};
+	var activeMonitor 	= {};
+	var responseStack 	= [];
+	var wifiSSID 		= '';
+	var registryAddress = '';
 
 	// exposed methods and variables
 	_this.sendCommand 		= sendCommand;
@@ -30,13 +30,14 @@ var VirtualDm32 = function (em) {
 	_this.disconnect 		= disconnect;
 	_this.response 			= response;
 	_this.socket 			= {};
+	_this.name 				= config.name;
 
 	initialize();
 
 	function initialize() {
 		wifiName().then(function(name){
-			wifiSSID 			= name;
-			apiServerAddress 	= config.apiServers[wifiSSID].url;
+			wifiSSID 		= name;
+			registryAddress = config.registry[wifiSSID].url;
 		});
 
 		em.on('data-available', processData);
@@ -157,15 +158,15 @@ var VirtualDm32 = function (em) {
 			paramSettings['name'] = config.name;
 			paramSettings['ip']	= ip.address();
 
-			// connect to API Server
-			_this.socket = io.connect(apiServerAddress + '/dm32', {query: { dm32: util.queryerize(paramSettings)} });
+			// connect service registry
+			_this.socket = io.connect(registryAddress + '/module', {query: { module: util.queryerize(paramSettings)} });
 			
 			_this.socket.on('disconnect', function(){
-				console.log('API Server was disconnected!');
+				console.log('Disconnected from registry.');
 			})
 
 			_this.socket.on('reconnect', function(){
-				console.log('API Server was reconnected!');
+				console.log('Reconnected to registry.');
 			})
 		}
 
@@ -175,14 +176,15 @@ var VirtualDm32 = function (em) {
 	// send back packet of sensor data with timestamp
 	function sendSensorData() {
 		sensorData['timestamp'] = Date.now();
-		em.emit('sensor-packet-available', sensorData);
+		em.emit('sensor-packet-available', sensorData);	// for automated test
 		sensorData = {};
 	}
 
 	// shutdown fan and stop data monitors
-	function disconnect(mon, dep) {
+	function disconnect(mon) {
 		!_.isUndefined(mon) && clearInterval(mon);
 		sendCommand('setEnvelopePressure', 0);
+		sensorData = {};
 	}
 };
 

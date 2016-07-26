@@ -13,12 +13,10 @@ var util 			= require('../util/util');
 var MainController = function() {
 	var _this = this;
 
-	var emitter 			= new events.EventEmitter();
-	var activeTestMonitor	= {};
+	var emitter = new events.EventEmitter();
 
 	// exposed methods and variables
 	_this.dm32 				= new Dm32Controller(emitter);
-	_this.abt				= {};	
 	_this.sendCommand 		= sendCommand;
 	_this.startAutoTest		= startAutoTest;
 	_this.stopAutoTest 		= stopAutoTest;
@@ -53,17 +51,17 @@ var MainController = function() {
 			util.sendJsonResponse(res, 200, {'message': 'Sweet, starting a new test. Feel free to go get that beer now.'});
 
 			_this.abt = new TestController(settings, _this.dm32, emitter);
-			activeTestMonitor = _this.abt.startTest();
+			_this.abt.startTest();
 		}
 	}
 
 	function stopAutoTest(req, res) {
-		if (_.isEmpty(_this.abt)) {
+		if (_.isUndefined(_this.abt)) {
 			util.sendJsonResponse(res, 404, {'message': 'There is no test running to stop.'});
 		} else {
 			util.sendJsonResponse(res, 200, {'message': 'Stopping test...'});
-			_this.abt.stopTest(activeTestMonitor);
-			_this.abt = {};
+			_this.abt.stopTest();
+			delete _this.abt;
 		}
 	}
 
@@ -71,7 +69,7 @@ var MainController = function() {
 		var error = req.query.error;
 		var depressurize = req.query.dep;
 
-		if (_.isEmpty(_this.abt)) {
+		if (_.isUndefined(_this.abt)) {
 			util.sendJsonResponse(res, 404, {'message': 'There is no test running to pause.'});
 		} else if(_this.abt.paused()) {
 			util.sendJsonResponse(res, 404, {'message': 'Test has already been paused.'});

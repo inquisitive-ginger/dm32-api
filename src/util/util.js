@@ -18,7 +18,7 @@ function delayedJsonResponse(res, delay, cb) {
 	setTimeout(function(){
 		var data = cb();
 		_.isUndefined(data) ? 	sendJsonResponse(res, 404, {message: 'No response was provided by DM32'}) :
-								sendJsonResponse(res, 404, {message: data});
+								sendJsonResponse(res, 200, {message: data});
 	}, delay);
 }
 
