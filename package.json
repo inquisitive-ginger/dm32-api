@@ -7,9 +7,12 @@
     "start": "node ./bin/www"
   },
   "dependencies": {
+    "body-parser": "1.13.2",
     "express": "4.13.1",
     "ip": "1.1.2",
+    "morgan": "1.6.1",
     "serialport": "2.0.6",
+    "simple-grep": "0.0.1",
     "socket.io": "1.4.5",
     "socket.io-client": "1.4.5",
     "underscore": "1.8.3",
